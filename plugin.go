@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"context"
+	"fmt"
 	"io"
 	"mime"
 	"os"
@@ -64,6 +65,7 @@ type Plugin struct {
 // Exec runs the plugin
 func (p *Plugin) Exec() error {
 	// normalize the target URL
+	fmt.Println("Initialized...")
 	if strings.HasPrefix(p.Target, "/") {
 		p.Target = p.Target[1:]
 	}
@@ -72,6 +74,7 @@ func (p *Plugin) Exec() error {
 	defer cancel()
 
 	// create the config
+	fmt.Println("Loading configuration...")
 	config, err := google.JWTConfigFromJSON([]byte(p.Credentials), storage.ScopeFullControl)
 	if err != nil {
 		return err
@@ -92,6 +95,7 @@ func (p *Plugin) Exec() error {
 	// create the bucket handle
 	bkt := gcc.Bucket(p.Bucket)
 
+	fmt.Println("Matching files...")
 	matches, err := matches(p.Files, p.Source, p.Exclude)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -99,6 +103,7 @@ func (p *Plugin) Exec() error {
 		}).Error("Could not match files")
 		return err
 	}
+	fmt.Println("Matched files = ", matches)
 
 	for _, match := range matches {
 
