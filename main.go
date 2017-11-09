@@ -40,6 +40,11 @@ func main() {
 			EnvVar: "PLUGIN_SOURCE",
 		},
 		cli.StringFlag{
+			Name:   "files",
+			Usage:  "upload files from a file list",
+			EnvVar: "PLUGIN_FILES",
+		},
+		cli.StringFlag{
 			Name:   "target",
 			Usage:  "upload files to target folder",
 			EnvVar: "PLUGIN_TARGET",
@@ -90,6 +95,7 @@ func run(c *cli.Context) error {
 		Bucket:       c.String("bucket"),
 		Access:       c.String("acl"),
 		Source:       c.String("source"),
+		Files:        c.String("files"),
 		Target:       c.String("target"),
 		StripPrefix:  c.String("strip-prefix"),
 		Exclude:      c.StringSlice("exclude"),

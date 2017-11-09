@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"compress/gzip"
 	"context"
 	"io"
@@ -11,7 +12,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	log "github.com/Sirupsen/logrus"
-	"github.com/mattn/go-zglob"
+	zglob "github.com/mattn/go-zglob"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
@@ -38,6 +39,10 @@ type Plugin struct {
 	//    /path/to/**
 	Source string
 	Target string
+
+	// File with file name
+	// Example: modified.txt
+	Files string
 
 	// Strip the prefix from the target path
 	StripPrefix string
@@ -87,7 +92,7 @@ func (p *Plugin) Exec() error {
 	// create the bucket handle
 	bkt := gcc.Bucket(p.Bucket)
 
-	matches, err := matches(p.Source, p.Exclude)
+	matches, err := matches(p.Files, p.Source, p.Exclude)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -235,15 +240,7 @@ func (p *Plugin) uploadFile(ctx context.Context, bkt *storage.BucketHandle, matc
 // matches is a helper function that returns a list of all files matching the
 // included Glob pattern, while excluding all files that matche the exclusion
 // Glob pattners.
-func matches(include string, exclude []string) ([]string, error) {
-	matches, err := zglob.Glob(include)
-	if err != nil {
-		return nil, err
-	}
-	if len(exclude) == 0 {
-		return matches, nil
-	}
-
+func matches(includeFile, includeBlob string, exclude []string) ([]string, error) {
 	// find all files that are excluded and load into a map. we can verify
 	// each file in the list is not a member of the exclusion list.
 	excludem := map[string]bool{}
@@ -258,13 +255,44 @@ func matches(include string, exclude []string) ([]string, error) {
 	}
 
 	var included []string
-	for _, include := range matches {
-		_, ok := excludem[include]
-		if ok {
-			continue
+	if len(includeBlob) > 0 {
+		matches, err := zglob.Glob(includeBlob)
+		if err != nil {
+			return nil, err
 		}
-		included = append(included, include)
+
+		for _, include := range matches {
+			_, ok := excludem[include]
+			if ok {
+				continue
+			}
+			included = append(included, include)
+		}
 	}
+
+	if len(includeFile) > 0 {
+		file, err := os.Open(includeFile)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error": err,
+				"file":  includeFile,
+			}).Error("Problem opening file of files")
+			return nil, err
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		scanner.Split(bufio.ScanLines)
+		for scanner.Scan() {
+			fileName := scanner.Text()
+			_, ok := excludem[fileName]
+			if ok {
+				continue
+			}
+			included = append(included, fileName)
+		}
+	}
+
 	return included, nil
 }
 
