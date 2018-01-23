@@ -1,6 +1,6 @@
 workspace:
   base: /go
-  path: src/github.com/wyattjoh/drone-gcs
+  path: src/github.com/PressLabs/drone-gcs
 
 pipeline:
   test:
@@ -10,14 +10,14 @@ pipeline:
     commands:
       - go vet
       - go test -cover -coverprofile=coverage.out
-      - go build -ldflags "-s -w -X main.build=$DRONE_BUILD_NUMBER" -a -tags netgo
+      - go build -ldflags "-s -w -X main.build=${DRONE_BUILD_NUMBER}" -a -tags netgo
 
   publish:
     image: plugins/docker
-    repo: wyattjoh/drone-gcs
-    password: ${DOCKER_PASSWORD}
-    email: ${DOCKER_EMAIL}
-    username: ${DOCKER_USERNAME}
+    repo: presslabs/drone-gcs
+    secrets:
+      - DOCKER_USERNAME
+      - DOCKER_PASSWORD
     tags: [ "latest", "1.0", "1" ]
     when:
       branch: master
