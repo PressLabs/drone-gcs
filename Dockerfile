@@ -1,8 +1,8 @@
-FROM ubuntu:latest
+FROM alpine:3.7
 
 ADD drone-gcs /bin/
 
-RUN apt-get update &&  apt-get install ca-certificates -y
+RUN apk --no-cache add ca-certificates && update-ca-certificates
 RUN chmod +x /bin/drone-gcs
 
 ENTRYPOINT ["/bin/drone-gcs"]
